@@ -1,0 +1,48 @@
+import logging
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+
+TOKEN = "PASTE_YOUR_TOKEN_HERE"
+
+logging.basicConfig(level=logging.INFO)
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Привіт. Я Senti 🙂\n"
+        "Я можу поговорити з тобою або зберегти твій настрій.\n\n"
+        "Команди:\n"
+        "/mood - записати настрій\n"
+        "/memories - фото пам'ять"
+    )
+
+async def mood(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Напиши як ти себе сьогодні почуваєш."
+    )
+    context.user_data["waiting_mood"] = True
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data.get("waiting_mood"):
+        mood_text = update.message.text
+        context.user_data["waiting_mood"] = False
+        await update.message.reply_text(
+            f"Я записав твій настрій:\n\n{mood_text}"
+        )
+    else:
+        await update.message.reply_text(
+            "Я тебе почув 🙂"
+        )
+
+async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Фото отримано 📸 Хочеш зберегти це як спогад?"
+    )
+
+app = ApplicationBuilder().token(TOKEN).build()
+
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("mood", mood))
+app.add_handler(MessageHandler(filters.PHOTO, photo))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+app.run_polling()
